@@ -1,0 +1,15 @@
+{
+    "private": true,
+    "scripts": {
+        "bundle-snabbdom": "webpack",
+        "publish": "dotnet fsi build.fsx publish"
+    },
+    "dependencies": {
+        "snabbdom": "^2.1.0"
+    },
+    "devDependencies": {
+        "fable-publish-utils": "2.0.0",
+        "webpack": "^5.24.3",
+        "webpack-cli": "^4.5.0"
+    }
+}
