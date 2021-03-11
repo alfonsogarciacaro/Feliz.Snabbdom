@@ -67,10 +67,10 @@ let mountOnVNode sel (program: Program<_,_,_,_>): Node =
 let __importAndMkProgram(path: string) (arg: 'arg): (Program<'arg, 'model, 'msg, Node> -> unit) -> unit = jsNative
 
 let inline importAndMountOnVNodeWith (path: string) sel (arg: 'arg): Node =
-    __mountOnVNodeWith (__importAndMkProgram path arg) sel arg
+    __mountOnVNodeWith (__importAndMkProgram (path + Compiler.extension) arg) sel arg
 
 let inline importAndMountOnVNode (path: string) sel: Node =
-    __mountOnVNodeWith (__importAndMkProgram path ()) sel ()
+    __mountOnVNodeWith (__importAndMkProgram (path + Compiler.extension) ()) sel ()
 
 let mountWithId (id: string) program =
     let parent = Browser.Dom.document.getElementById(id)

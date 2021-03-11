@@ -330,7 +330,7 @@ module Program =
                 match model with
                 | Inactive ->
                     """
-Your are using HMR and this Elmish application has been marked as inactive.
+You are using HMR and this Elmish application has been marked as inactive.
 You should not see this message
                     """
                     |> failwith

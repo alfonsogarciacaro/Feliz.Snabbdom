@@ -51,11 +51,12 @@ let view model dispatch =
             ]
         ]
 
-        match model.CurrentTab with
+        // Extension will be added by compiler, referenced file must expose a `mkProgram` function
         // Make sure to use a different selector so the node is updated when the tab changes
-        | Todos -> Program.importAndMountOnVNode "./Todos.fs.js" "div.todos"
-        | Dragging -> Program.importAndMountOnVNode "./Dragging.fs.js" "div.dragging"
-        | Leaflet -> Program.importAndMountOnVNode "./Leaflet.fs.js" "div.leaflet"
+        match model.CurrentTab with
+        | Todos -> Program.importAndMountOnVNode "./Todos" "div.todos"
+        | Dragging -> Program.importAndMountOnVNode "./Dragging" "div.dragging"
+        | Leaflet -> Program.importAndMountOnVNode "./Leaflet" "div.leaflet"
     ]
 
 // When working on a specific module, you can initialize it directly to activate HMR

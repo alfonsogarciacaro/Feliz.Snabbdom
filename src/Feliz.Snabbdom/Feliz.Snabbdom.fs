@@ -23,83 +23,59 @@ type Node =
     | Event of string * obj
     | Fragment of Node list
 
-type Helper() =
-    member _.MakeNode(tag, nodes) =
-        let mutable transformArrayHooks = false
+let private makeNode tag nodes =
+    let mutable transformArrayHooks = false
 
-        let rec add isHook (o: obj) keys (v: obj) =
-            match keys with
-            | [] -> failwith "Empty key list"
-            | [key] ->
-                if isHook && isIn key o then
-                    transformArrayHooks <- true
-                    emitJsStatement (o, key, v) """
-                        if (Array.isArray($0[$1])) {
-                            $0[$1].push($2);
-                        } else {
-                            $0[$1] = [$0[$1], $2]
-                        }"""
-                else
-                    o?(key) <- v
-            | key::keys ->
-                if isNull o?(key) then o?(key) <- obj()
-                add isHook (o?(key)) keys v
+    let rec add isHook (o: obj) keys (v: obj) =
+        match keys with
+        | [] -> failwith "Empty key list"
+        | [key] ->
+            if isHook && isIn key o then
+                transformArrayHooks <- true
+                emitJsStatement (o, key, v) """
+                    if (Array.isArray($0[$1])) {
+                        $0[$1].push($2);
+                    } else {
+                        $0[$1] = [$0[$1], $2]
+                    }"""
+            else
+                o?(key) <- v
+        | key::keys ->
+            if isNull o?(key) then o?(key) <- obj()
+            add isHook (o?(key)) keys v
 
-        let rec addNodes (data: obj) (children: ResizeArray<_>) (nodes: Node seq) =
-            nodes |> Seq.iter (function
-                | Key k -> data?key <- k
-                | Text s -> children.Add(Helper.Text s)
-                | El vnode -> children.Add(vnode)
-                | Hook(k, v) -> add true data ["hook"; k] v
-                | Style(k, v, StyleHook.None) -> add false data ["style"; k] v
-                | Style(k, v, StyleHook.Delayed) -> add false data ["style"; "delayed"; k] v
-                | Style(k, v, StyleHook.Remove) -> add false data ["style"; "remove"; k] v
-                | Style(k, v, StyleHook.Destroy) -> add false data ["style"; "destroy"; k] v
-                | Attr(k, v) -> add false data ["attrs"; k] v
-                | Event(k, v) -> add false data ["on"; k] v
-                | Fragment nodes -> addNodes data children nodes
-            )
+    let rec addNodes (data: obj) (children: ResizeArray<_>) (nodes: Node seq) =
+        nodes |> Seq.iter (function
+            | Key k -> data?key <- k
+            | Text s -> children.Add(Helper.Text s)
+            | El vnode -> children.Add(vnode)
+            | Hook(k, v) -> add true data ["hook"; k] v
+            | Style(k, v, StyleHook.None) -> add false data ["style"; k] v
+            | Style(k, v, StyleHook.Delayed) -> add false data ["style"; "delayed"; k] v
+            | Style(k, v, StyleHook.Remove) -> add false data ["style"; "remove"; k] v
+            | Style(k, v, StyleHook.Destroy) -> add false data ["style"; "destroy"; k] v
+            | Attr(k, v) -> add false data ["attrs"; k] v
+            | Event(k, v) -> add false data ["on"; k] v
+            | Fragment nodes -> addNodes data children nodes
+        )
 
-        let data = obj()
-        let children = ResizeArray()
-        addNodes data children nodes
-        if transformArrayHooks then
-            emitJsStatement (data) """
-                Object.keys($0.hook)
-                    .filter(k => Array.isArray($0.hook[k]))
-                    .forEach(k => {
-                        const cbs = $0.hook[k];
-                        $0.hook[k] = function() {
-                            for (let cb of cbs) {
-                                cb.apply(void 0, arguments)
-                            }
+    let data = obj()
+    let children = ResizeArray()
+    addNodes data children nodes
+    if transformArrayHooks then
+        emitJsStatement (data) """
+            Object.keys($0.hook)
+                .filter(k => Array.isArray($0.hook[k]))
+                .forEach(k => {
+                    const cbs = $0.hook[k];
+                    $0.hook[k] = function() {
+                        for (let cb of cbs) {
+                            cb.apply(void 0, arguments)
                         }
-                    })"""
+                    }
+                })"""
 
-        Snabbdom.h(tag, data, children) |> El
-
-    member _.StringToNode(v) = Text v
-    member _.EmptyNode = Fragment []
-
-    interface HtmlHelper<Node> with
-        member this.MakeNode(tag, nodes) = this.MakeNode(tag, nodes)
-        member this.StringToNode(v) = this.StringToNode(v)
-        member this.EmptyNode = this.EmptyNode
-
-    interface SvgHelper<Node> with
-        member this.MakeSvgNode(tag, nodes) = this.MakeNode(tag, nodes)
-        member this.StringToSvgNode(v) = this.StringToNode(v)
-        member this.EmptySvgNode = this.EmptyNode
-
-    interface AttrHelper<Node> with
-        member _.MakeAttr(key, value) = Attr(key, value)
-        member _.MakeBooleanAttr(key, value) = Attr(key, value)
-
-    interface CssHelper<Node> with
-        member _.MakeStyle(k, v) = Style(k, v, StyleHook.None)
-
-    interface EventHelper<Node> with
-        member _.MakeEvent(k, f) = Event(k.ToLowerInvariant(), f)
+    Snabbdom.h(tag, data, children) |> El
 
 open System.Runtime.CompilerServices
 
@@ -127,20 +103,27 @@ type Browser.Types.EventTarget with
     member this.AsInputEl =
         this :?> Browser.Types.HTMLInputElement
 
-let private h = Helper()
-
 type Node with
     static member AsVNode = function
         | El vnode -> vnode
         | Fragment [El vnode] -> vnode
-        | Fragment nodes -> h.MakeNode("div", nodes) |> Node.AsVNode
+        | Fragment nodes -> makeNode "div" nodes |> Node.AsVNode
         | _ -> failwith "not a vnode"
 
-let Html = HtmlEngine(h)
-let Svg = SvgEngine(h)
-let Attr = AttrEngine(h)
-let Css = CssEngine(h)
-let Ev = EventEngine(h)
+let Html = HtmlEngine(makeNode = (fun tag nodes -> makeNode tag nodes),
+                      stringToNode = (fun v -> Text v),
+                      emptyNode = (fun () -> Fragment []))
+
+let Svg = SvgEngine(makeNode = (fun tag nodes -> makeNode tag nodes),
+                    stringToNode = (fun v -> Text v),
+                    emptyNode = (fun () -> Fragment []))
+
+let Attr = AttrEngine(makeAttr = (fun k v -> Attr(k, v)),
+                      makeBooleanAttr = (fun k v -> Attr(k, v)))
+
+let Css = CssEngine(fun k v -> Style(k, v, StyleHook.None))
+
+let Ev = EventEngine(fun k f -> Event(k.ToLowerInvariant(), f))
 
 type Hook =
     /// a vnode has been added
@@ -215,9 +198,7 @@ let private attachEvent (f: Browser.Types.Event -> unit) (el: Browser.Types.Node
     Disposable.make (fun () -> el.removeEventListener (eventType, f))
 
 let private mkEventEngine (node: Browser.Types.Node) =
-    EventEngine
-        { new EventHelper<IDisposable> with
-            member _.MakeEvent(e, f) = e.ToLowerInvariant() |> attachEvent f node }
+    EventEngine(fun e f -> e.ToLowerInvariant() |> attachEvent f node)
 
 let BodyEv = mkEventEngine(Browser.Dom.document.body)
 
