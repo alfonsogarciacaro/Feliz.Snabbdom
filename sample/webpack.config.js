@@ -16,6 +16,10 @@ module.exports = {
 	},
 	mode,
 	devtool: prod ? false : 'source-map',
+    devServer: {
+        contentBase: path.join(__dirname, "public"),
+        hot: true,
+	},
 	module: {
 		rules: [
 			{

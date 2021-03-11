@@ -13,7 +13,7 @@
     <ProjectReference Include="..\src\Elmish.Snabbdom\Elmish.Snabbdom.fsproj" />
   </ItemGroup> -->
   <ItemGroup>
-    <PackageReference Include="Elmish.Snabbdom" Version="1.0.0-beta-004" />
+    <PackageReference Include="Elmish.Snabbdom" Version="1.0.0-beta-005" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.TsDeclaration" Version="1.0.0-beta-001" />
