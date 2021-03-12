@@ -1,4 +1,8 @@
 *.fs.js
+*/public/*.js
+*/public/*.txt
+*/public/*.png
+
 .idea/
 
 ## Ignore Visual Studio temporary files, build results, and
