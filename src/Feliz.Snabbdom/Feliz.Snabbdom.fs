@@ -110,16 +110,11 @@ type Node with
         | Fragment nodes -> makeNode "div" nodes |> Node.AsVNode
         | _ -> failwith "not a vnode"
 
-let Html = HtmlEngine(makeNode = (fun tag nodes -> makeNode tag nodes),
-                      stringToNode = (fun v -> Text v),
-                      emptyNode = (fun () -> Fragment []))
+let Html = HtmlEngine(makeNode, Text, fun () -> Fragment [])
 
-let Svg = SvgEngine(makeNode = (fun tag nodes -> makeNode tag nodes),
-                    stringToNode = (fun v -> Text v),
-                    emptyNode = (fun () -> Fragment []))
+let Svg = SvgEngine(makeNode, Text, fun () -> Fragment [])
 
-let Attr = AttrEngine(makeAttr = (fun k v -> Attr(k, v)),
-                      makeBooleanAttr = (fun k v -> Attr(k, v)))
+let Attr = AttrEngine((fun k v -> Attr(k, v)), (fun k v -> Attr(k, v)))
 
 let Css = CssEngine(fun k v -> Style(k, v, StyleHook.None))
 

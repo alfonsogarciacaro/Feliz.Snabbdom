@@ -14,7 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Core" Version="3.2.5" />
-    <PackageReference Include="Feliz.Engine.Event" Version="1.0.0-beta-003" />
+    <PackageReference Include="Feliz.Engine.Event" Version="1.0.0-beta-004" />
   </ItemGroup>
   <!-- <ItemGroup>
     <ProjectReference Include="..\..\..\Feliz.Engine\src\Feliz.Engine.Event\Feliz.Engine.Event.fsproj" />
